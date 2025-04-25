@@ -9,16 +9,16 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const existing = await findUserByUsername(username);
     if (existing) {
-      res.status(400).json({ error: "Usuario ya existe" });
+      res.status(400).json({ error: "🚫 Usuario ya existe" });
       return;
     }
 
     const hashed = await bcrypt.hash(password, 10);
     await createUser(username, hashed);
 
-    res.status(201).json({ message: "Usuario registrado correctamente" });
+    res.status(201).json({ message: "✅ Usuario registrado correctamente" });
   } catch (err) {
-    res.status(500).json({ error: "Error en el servidor" });
+    res.status(500).json({ error: "❌ Error en el servidor" });
   }
 };
 
@@ -28,13 +28,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await findUserByUsername(username);
     if (!user) {
-      res.status(404).json({ error: "Usuario no encontrado" });
+      res.status(404).json({ error: "❗Usuario no encontrado" });
       return;
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      res.status(401).json({ error: "Credenciales incorrectas" });
+      res.status(401).json({ error: "❌ Credenciales incorrectas" });
       return;
     }
 
@@ -46,6 +46,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ token });
   } catch (err) {
-    res.status(500).json({ error: "Error al iniciar sesión" });
+    res.status(500).json({ error: "❌ Error al iniciar sesión" });
   }
 };
