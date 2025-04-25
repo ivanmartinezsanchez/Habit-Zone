@@ -18,6 +18,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({ message: "✅ Usuario registrado correctamente" });
   } catch (err) {
+    console.error('❌ Error en register:', err); // 👈 AÑADE ESTA LÍNEA
     res.status(500).json({ error: "❌ Error en el servidor" });
   }
 };
@@ -46,6 +47,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({ token });
   } catch (err) {
+    console.error('❌ Error en login:', err); // 👈 AÑADE ESTA LÍNEA
     res.status(500).json({ error: "❌ Error al iniciar sesión" });
   }
 };
