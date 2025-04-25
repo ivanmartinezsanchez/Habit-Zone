@@ -18,7 +18,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({ message: "✅ Usuario registrado correctamente" });
   } catch (err) {
-    console.error('❌ Error en register:', err); // 👈 AÑADE ESTA LÍNEA
+    console.error('❌ Error en register:', err); 
     res.status(500).json({ error: "❌ Error en el servidor" });
   }
 };
