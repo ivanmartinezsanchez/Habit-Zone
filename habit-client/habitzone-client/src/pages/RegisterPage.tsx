@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
+import { registerUser } from "../services/authService";
 
 function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -9,7 +9,7 @@ function RegisterPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
@@ -19,16 +19,16 @@ function RegisterPage() {
     }
 
     try {
-      await axios.post("http://localhost:4000/auth/register", {
-        username,
-        password,
-      });
-
+      await registerUser(username, password);
       alert("Usuario registrado correctamente. Inicia sesión.");
       navigate("/");
     } catch (err) {
-      const error = err as AxiosError<{ error: string }>;
-      setError(error.response?.data?.error || "Error al registrar usuario");
+      if (err instanceof Error && "response" in err) {
+        const axiosError = err as { response?: { data?: { error?: string } } };
+        setError(axiosError.response?.data?.error || "Error al registrar usuario");
+      } else {
+        setError("Error desconocido al registrar usuario");
+      }
     }
   };
 

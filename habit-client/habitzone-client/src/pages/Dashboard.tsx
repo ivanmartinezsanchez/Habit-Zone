@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { getHabits, createHabit, updateHabit, deleteHabit } from "../services/habitService";
+import { markHabitAsDone, getTrackingByDate } from "../services/trackerService";
 
 interface Habit {
   id: number;
@@ -37,8 +38,6 @@ function Dashboard() {
   const username = decoded?.username || "";
   const today = new Date().toISOString().split("T")[0];
 
-  const API_BASE = "http://localhost:4000/api";
-
   const getPastDays = (days: number) => {
     const result: string[] = [];
     for (let i = 0; i < days; i++) {
@@ -68,10 +67,8 @@ function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const habitsRes = await axios.get(`${API_BASE}/habits`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setHabits(habitsRes.data);
+        const habitsRes = await getHabits(token);
+        setHabits(habitsRes);
 
         const completed: number[] = [];
         const map: Record<number, string[]> = {};
@@ -79,10 +76,8 @@ function Dashboard() {
 
         await Promise.all(
           past30.map(async (date) => {
-            const res = await axios.get(`${API_BASE}/tracker/date/${date}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            res.data.forEach((entry: TrackerEntry) => {
+            const entries: TrackerEntry[] = await getTrackingByDate(token, date);
+            entries.forEach((entry) => {
               if (!map[entry.habit_id]) map[entry.habit_id] = [];
               map[entry.habit_id].push(date);
               if (date === today) completed.push(entry.habit_id);
@@ -100,17 +95,12 @@ function Dashboard() {
     fetchData();
   }, [token, navigate, today]);
 
-  const handleAddHabit = async (e: React.FormEvent) => {
+  const handleAddHabit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || !token) return;
 
     try {
-      const res = await axios.post(
-        `${API_BASE}/habits`,
-        { title },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const newHabit: Habit = res.data.habit;
+      const newHabit = await createHabit(title, token);
       setHabits((prev) => [...prev, newHabit]);
       setTitle("");
     } catch {
@@ -119,12 +109,9 @@ function Dashboard() {
   };
 
   const handleMarkAsDone = async (habitId: number) => {
+    if (!token) return;
     try {
-      await axios.post(
-        `${API_BASE}/tracker`,
-        { habitId, date: today },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await markHabitAsDone(habitId, today, token);
       setCompletedToday((prev) => [...prev, habitId]);
     } catch {
       console.error("Error al marcar hábito");
@@ -137,13 +124,9 @@ function Dashboard() {
   };
 
   const handleEditSave = async () => {
-    if (!editingHabit) return;
+    if (!editingHabit || !token) return;
     try {
-      await axios.put(
-        `${API_BASE}/habits/${editingHabit.id}`,
-        { title: editTitle },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await updateHabit(editingHabit.id, editTitle, token);
       setHabits((prev) =>
         prev.map((h) => (h.id === editingHabit.id ? { ...h, title: editTitle } : h))
       );
@@ -158,11 +141,9 @@ function Dashboard() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!habitToDelete) return;
+    if (!habitToDelete || !token) return;
     try {
-      await axios.delete(`${API_BASE}/habits/${habitToDelete.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await deleteHabit(habitToDelete.id, token);
       setHabits((prev) => prev.filter((h) => h.id !== habitToDelete.id));
       setCompletedToday((prev) => prev.filter((id) => id !== habitToDelete.id));
       setCompletedMap((prev) => {
@@ -318,3 +299,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+

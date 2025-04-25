@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-
-const API_BASE = "http://localhost:4000/api";
+import { getHabits, updateHabit, deleteHabit } from "../services/habitService";
+import { getTrackingByDate } from "../services/trackerService";
 
 interface Habit {
   id: number;
@@ -48,30 +47,28 @@ function WeeklyView() {
     setWeek(currentWeek);
 
     const fetchHabitsAndTracking = async () => {
-      const habitsRes = await axios.get(`${API_BASE}/habits`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      try {
+        const habitsList: Habit[] = await getHabits(token);
+        setHabits(habitsList);
 
-      const habitsList: Habit[] = habitsRes.data;
-      setHabits(habitsList);
+        const newWeekData: Record<string, number[]> = {};
 
-      const newWeekData: Record<string, number[]> = {};
+        await Promise.all(
+          currentWeek.map(async (date) => {
+            const entries: TrackerEntry[] = await getTrackingByDate(token, date);
 
-      await Promise.all(
-        currentWeek.map(async (date) => {
-          const res = await axios.get(`${API_BASE}/tracker/date/${date}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+            const filteredEntries = entries.filter((entry) =>
+              habitsList.some((habit) => habit.id === entry.habit_id)
+            );
 
-          const filteredEntries = res.data.filter((entry: TrackerEntry) =>
-            habitsList.some((habit) => habit.id === entry.habit_id)
-          );
+            newWeekData[date] = filteredEntries.map((item) => item.habit_id);
+          })
+        );
 
-          newWeekData[date] = filteredEntries.map((item: TrackerEntry) => item.habit_id);
-        })
-      );
-
-      setWeekData(newWeekData);
+        setWeekData(newWeekData);
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+      }
     };
 
     fetchHabitsAndTracking();
@@ -83,22 +80,15 @@ function WeeklyView() {
   };
 
   const handleEditSave = async () => {
-    if (!editingHabit) return;
-
+    if (!editingHabit || !token) return;
     try {
-      await axios.put(
-        `${API_BASE}/habits/${editingHabit.id}`,
-        { title: editTitle },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      await updateHabit(editingHabit.id, editTitle, token);
       setHabits((prev) =>
         prev.map((h) => (h.id === editingHabit.id ? { ...h, title: editTitle } : h))
       );
-
       setEditingHabit(null);
-    } catch (err) {
-      console.error("Error al editar hábito:", err);
+    } catch (error) {
+      console.error("Error al editar hábito:", error);
     }
   };
 
@@ -107,15 +97,10 @@ function WeeklyView() {
   };
 
   const handleConfirmDelete = async () => {
-    if (!habitToDelete) return;
-
+    if (!habitToDelete || !token) return;
     try {
-      await axios.delete(`${API_BASE}/habits/${habitToDelete.id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      await deleteHabit(habitToDelete.id, token);
       setHabits((prev) => prev.filter((h) => h.id !== habitToDelete.id));
-
       setWeekData((prev) => {
         const updated: Record<string, number[]> = {};
         for (const date in prev) {
@@ -123,10 +108,9 @@ function WeeklyView() {
         }
         return updated;
       });
-
       setHabitToDelete(null);
-    } catch (err) {
-      console.error("Error al eliminar hábito:", err);
+    } catch (error) {
+      console.error("Error al eliminar hábito:", error);
     }
   };
 
@@ -187,6 +171,7 @@ function WeeklyView() {
         )}
       </div>
 
+      {/* Modal de Edición */}
       {editingHabit && (
         <div className="modal fade show d-block" style={{ background: "#00000080" }}>
           <div className="modal-dialog">
@@ -220,6 +205,7 @@ function WeeklyView() {
         </div>
       )}
 
+      {/* Modal de Eliminación */}
       {habitToDelete && (
         <div className="modal fade show d-block" style={{ background: "#00000080" }}>
           <div className="modal-dialog">
@@ -247,6 +233,7 @@ function WeeklyView() {
           </div>
         </div>
       )}
+
       <Footer />
     </div>
   );

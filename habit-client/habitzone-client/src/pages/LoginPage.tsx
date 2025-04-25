@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios, { AxiosError } from "axios";
 import { useNavigate } from "react-router-dom";
+import { loginUser } from "../services/authService";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -8,22 +8,21 @@ function LoginPage() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:4000/auth/login", {
-        username,
-        password,
-      });
-
-      const token = res.data.token;
+      const token = await loginUser(username, password);
       localStorage.setItem("token", token);
       navigate("/dashboard");
     } catch (err) {
-      const error = err as AxiosError<{ error: string }>;
-      setError(error.response?.data?.error || "Error al iniciar sesión");
+      if (err instanceof Error && "response" in err) {
+        const axiosError = err as { response?: { data?: { error?: string } } };
+        setError(axiosError.response?.data?.error || "Error al iniciar sesión");
+      } else {
+        setError("Error desconocido al iniciar sesión");
+      }
     }
   };
 
@@ -64,3 +63,4 @@ function LoginPage() {
 }
 
 export default LoginPage;
+
