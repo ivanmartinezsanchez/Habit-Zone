@@ -37,6 +37,8 @@ function Dashboard() {
   const username = decoded?.username || "";
   const today = new Date().toISOString().split("T")[0];
 
+  const API_BASE = "http://localhost:4000/api";
+
   const getPastDays = (days: number) => {
     const result: string[] = [];
     for (let i = 0; i < days; i++) {
@@ -66,7 +68,7 @@ function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const habitsRes = await axios.get("http://localhost:4000/api/habits", {
+        const habitsRes = await axios.get(`${API_BASE}/habits`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setHabits(habitsRes.data);
@@ -77,7 +79,7 @@ function Dashboard() {
 
         await Promise.all(
           past30.map(async (date) => {
-            const res = await axios.get(`http://localhost:4000/api/tracker/date/${date}`, {
+            const res = await axios.get(`${API_BASE}/tracker/date/${date}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
             res.data.forEach((entry: TrackerEntry) => {
@@ -104,7 +106,7 @@ function Dashboard() {
 
     try {
       const res = await axios.post(
-        "http://localhost:4000/api/habits",
+        `${API_BASE}/habits`,
         { title },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -119,7 +121,7 @@ function Dashboard() {
   const handleMarkAsDone = async (habitId: number) => {
     try {
       await axios.post(
-        "http://localhost:4000/api/tracker",
+        `${API_BASE}/tracker`,
         { habitId, date: today },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -138,7 +140,7 @@ function Dashboard() {
     if (!editingHabit) return;
     try {
       await axios.put(
-        `http://localhost:4000/api/habits/${editingHabit.id}`,
+        `${API_BASE}/habits/${editingHabit.id}`,
         { title: editTitle },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -158,7 +160,7 @@ function Dashboard() {
   const handleConfirmDelete = async () => {
     if (!habitToDelete) return;
     try {
-      await axios.delete(`http://localhost:4000/api/habits/${habitToDelete.id}`, {
+      await axios.delete(`${API_BASE}/habits/${habitToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setHabits((prev) => prev.filter((h) => h.id !== habitToDelete.id));

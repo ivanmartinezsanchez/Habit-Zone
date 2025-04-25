@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
+const API_BASE = "http://localhost:4000/api";
+
 interface Habit {
   id: number;
   title: string;
@@ -46,7 +48,7 @@ function WeeklyView() {
     setWeek(currentWeek);
 
     const fetchHabitsAndTracking = async () => {
-      const habitsRes = await axios.get("http://localhost:4000/api/habits", {
+      const habitsRes = await axios.get(`${API_BASE}/habits`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -57,7 +59,7 @@ function WeeklyView() {
 
       await Promise.all(
         currentWeek.map(async (date) => {
-          const res = await axios.get(`http://localhost:4000/api/tracker/date/${date}`, {
+          const res = await axios.get(`${API_BASE}/tracker/date/${date}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -85,7 +87,7 @@ function WeeklyView() {
 
     try {
       await axios.put(
-        `http://localhost:4000/api/habits/${editingHabit.id}`,
+        `${API_BASE}/habits/${editingHabit.id}`,
         { title: editTitle },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -108,7 +110,7 @@ function WeeklyView() {
     if (!habitToDelete) return;
 
     try {
-      await axios.delete(`http://localhost:4000/api/habits/${habitToDelete.id}`, {
+      await axios.delete(`${API_BASE}/habits/${habitToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -129,10 +131,9 @@ function WeeklyView() {
   };
 
   return (
-    <div className="d-flex flex-column min-vh-100 bg-dark text-light">
+    <div className="bg-dark text-light min-vh-100 d-flex flex-column">
       <Navbar />
-
-      <main className="flex-grow-1 container py-4">
+      <div className="container py-4 flex-grow-1">
         <h2 className="text-center mb-4">📆 Historial Semanal de tus tareas.</h2>
 
         {habits.length === 0 ? (
@@ -184,7 +185,7 @@ function WeeklyView() {
             </table>
           </div>
         )}
-      </main>
+      </div>
 
       {editingHabit && (
         <div className="modal fade show d-block" style={{ background: "#00000080" }}>
@@ -246,7 +247,6 @@ function WeeklyView() {
           </div>
         </div>
       )}
-
       <Footer />
     </div>
   );
